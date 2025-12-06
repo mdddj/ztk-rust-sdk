@@ -1,0 +1,188 @@
+# Implementation Plan
+
+- [x] 1. 项目基础结构搭建
+  - [x] 1.1 配置 Cargo.toml，添加依赖项和 features
+    - 添加 reqwest, serde, serde_json, thiserror, tokio, url 依赖
+    - 配置各平台的 feature flags
+    - _Requirements: 1.5_
+  - [x] 1.2 创建模块目录结构
+    - 创建 src/common/, src/taobao/, src/jd/, src/pdd/ 等目录
+    - 创建各模块的 mod.rs 文件
+    - _Requirements: 1.4_
+  - [x] 1.3 实现错误类型 (src/error.rs)
+    - 定义 ZtkError 枚举，包含 Network, Api, Parse, Validation 变体
+    - 实现 std::error::Error trait
+    - 定义 ZtkResult<T> 类型别名
+    - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5_
+  - [ ]* 1.4 编写错误类型属性测试
+    - **Property 6: 错误类型完整性**
+    - **Validates: Requirements 12.1-12.5**
+
+- [x] 2. 公共模块实现 (src/common/)
+  - [x] 2.1 实现公共类型定义 (src/common/types.rs)
+    - 定义 SignUrlType, SortDirection 等公共枚举
+    - 为枚举实现 Serialize, Deserialize
+    - _Requirements: 14.1, 14.6_
+  - [ ]* 2.2 编写枚举序列化属性测试
+    - **Property 5: 枚举序列化 Round-Trip**
+    - **Validates: Requirements 14.1-14.7**
+  - [x] 2.3 实现 HTTP 请求封装 (src/common/http.rs)
+    - 封装 GET/POST 请求方法
+    - 处理 URL 编码
+    - 处理响应解析
+    - _Requirements: 2.2, 13.2_
+  - [ ]* 2.4 编写 URL 编码属性测试
+    - **Property 2: URL 编码 Round-Trip**
+    - **Validates: Requirements 2.2**
+
+- [x] 3. 核心客户端实现 (src/client.rs)
+  - [x] 3.1 实现 ZtkClientBuilder
+    - 实现 new(), base_url(), timeout(), build() 方法
+    - 设置默认 base_url
+    - _Requirements: 1.1, 1.2, 1.3_
+  - [ ]* 3.2 编写 Builder 属性测试
+    - **Property 7: Builder 模式链式调用**
+    - **Validates: Requirements 10.4**
+  - [x] 3.3 实现 ZtkClient 结构体
+    - 存储 http_client, base_url, appkey
+    - 实现各平台 API 访问方法 (taobao(), jd(), pdd() 等)
+    - _Requirements: 1.4_
+  - [ ]* 3.4 编写客户端配置属性测试
+    - **Property 1: 客户端配置保持一致性**
+    - **Validates: Requirements 1.1, 1.3**
+
+- [x] 4. Checkpoint - 确保所有测试通过
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 5. 淘宝平台模块实现 (src/taobao/)
+  - [x] 5.1 定义淘宝枚举类型 (src/taobao/enums.rs)
+    - 定义 TaobaoSignUrlType 等淘宝特有枚举
+    - _Requirements: 14.7_
+  - [x] 5.2 定义淘宝请求结构体 (src/taobao/request.rs)
+    - ConvertByItemIdRequest, ConvertByTklRequest
+    - BatchConvertRequest, QueryOrdersRequest
+    - CreateTklRequest, ParseItemIdRequest
+    - 添加中文注释，使用 Option<T> 包装可选字段
+    - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 10.1, 10.2, 10.3_
+  - [ ]* 5.3 编写请求参数序列化属性测试
+    - **Property 3: 请求参数序列化 Round-Trip**
+    - **Property 8: 可选参数序列化**
+    - **Validates: Requirements 10.3, 10.5**
+  - [x] 5.4 定义淘宝响应结构体 (src/taobao/response.rs)
+    - ConvertByTklResponse, ConvertResponse
+    - BatchConvertResponse, QueryOrdersResponse
+    - GoodsDetail 等详细商品信息结构
+    - 添加中文注释
+    - _Requirements: 11.1, 11.4_
+  - [ ]* 5.5 编写响应反序列化属性测试
+    - **Property 4: 响应数据反序列化 Round-Trip**
+    - **Validates: Requirements 11.2, 11.5**
+  - [x] 5.6 实现 TaobaoApi (src/taobao/api.rs)
+    - 实现 convert_by_item_id(), convert_by_tkl()
+    - 实现 batch_convert(), query_orders()
+    - 实现 create_tkl(), parse_item_id()
+    - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6_
+
+- [x] 6. 京东平台模块实现 (src/jd/)
+  - [x] 6.1 定义京东枚举类型 (src/jd/enums.rs)
+    - JdEliteId, JdSortField, ChainType
+    - OrderQueryType
+    - _Requirements: 14.2, 14.5_
+  - [x] 6.2 定义京东请求结构体 (src/jd/request.rs)
+    - JdConvertRequest, JingfenGoodsRequest
+    - JdOrderQueryRequest, JdGoodsDetailRequest
+    - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 10.1, 10.2, 10.3_
+  - [x] 6.3 定义京东响应结构体 (src/jd/response.rs)
+    - JdConvertResponse, JingfenGoodsResponse
+    - JdOrderResponse, JdGoodsDetailResponse
+    - _Requirements: 11.1, 11.4_
+  - [x] 6.4 实现 JdApi (src/jd/api.rs)
+    - 实现 convert(), jingfen_goods()
+    - 实现 query_orders(), goods_detail(), hot_goods()
+    - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
+
+- [x] 7. 拼多多平台模块实现 (src/pdd/)
+  - [x] 7.1 定义拼多多请求结构体 (src/pdd/request.rs)
+    - PddConvertRequest, PddGoodsDetailRequest
+    - PddOrderQueryRequest, PddAuthorizeRequest
+    - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 10.1, 10.3_
+  - [x] 7.2 定义拼多多响应结构体 (src/pdd/response.rs)
+    - PddConvertResponse, PddGoodsDetailResponse
+    - PddOrderResponse, PddAuthorizeResponse
+    - _Requirements: 11.1, 11.4_
+  - [x] 7.3 实现 PddApi (src/pdd/api.rs)
+    - 实现 convert(), goods_detail_simple(), goods_detail_full()
+    - 实现 query_orders(), authorize()
+    - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
+
+- [x] 8. Checkpoint - 确保所有测试通过
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 9. 唯品会平台模块实现 (src/vip/)
+  - [x] 9.1 定义唯品会请求/响应结构体
+    - VipConvertRequest, VipAuthorizeRequest
+    - VipOrderQueryRequest, VipGoodsDetailRequest
+    - VipSearchGoodsRequest
+    - 对应的响应结构体
+    - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
+  - [x] 9.2 实现 VipApi (src/vip/api.rs)
+    - 实现 convert(), authorize(), query_orders()
+    - 实现 goods_detail(), search_goods()
+    - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
+
+- [x] 10. 美团平台模块实现 (src/meituan/)
+  - [x] 10.1 定义美团请求/响应结构体
+    - MeituanConvertRequest, MeituanOrderQueryRequest
+    - 对应的响应结构体
+    - _Requirements: 6.1, 6.2_
+  - [x] 10.2 实现 MeituanApi (src/meituan/api.rs)
+    - 实现 convert(), query_orders()
+    - _Requirements: 6.1, 6.2_
+
+- [x] 11. 考拉平台模块实现 (src/kaola/)
+  - [x] 11.1 定义考拉请求/响应结构体
+    - KaolaConvertRequest, KaolaGoodsListRequest
+    - KaolaSearchGoodsRequest, KaolaOrderQueryRequest
+    - 对应的响应结构体
+    - _Requirements: 7.1, 7.2, 7.3, 7.4_
+  - [x] 11.2 实现 KaolaApi (src/kaola/api.rs)
+    - 实现 convert(), goods_list(), search_goods(), query_orders()
+    - _Requirements: 7.1, 7.2, 7.3, 7.4_
+
+- [x] 12. 饿了么平台模块实现 (src/eleme/)
+  - [x] 12.1 定义饿了么请求/响应结构体
+    - ElemeConvertRequest, ElemeOrderQueryRequest
+    - 对应的响应结构体
+    - _Requirements: 8.1, 8.2_
+  - [x] 12.2 实现 ElemeApi (src/eleme/api.rs)
+    - 实现 convert(), query_orders()
+    - _Requirements: 8.1, 8.2_
+
+- [x] 13. 抖音平台模块实现 (src/douyin/)
+  - [x] 13.1 定义抖音枚举类型 (src/douyin/enums.rs)
+    - DouyinConvertType 等抖音特有枚举
+    - _Requirements: 14.7_
+  - [x] 13.2 定义抖音请求/响应结构体
+    - DouyinGoodsConvertRequest, DouyinLiveConvertRequest
+    - DouyinActivityConvertRequest, DouyinGoodsDetailRequest
+    - DouyinSearchGoodsRequest, DouyinParseCommandRequest
+    - DouyinOrderQueryRequest
+    - 对应的响应结构体
+    - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7_
+  - [x] 13.3 实现 DouyinApi (src/douyin/api.rs)
+    - 实现 convert_goods(), convert_live(), convert_activity()
+    - 实现 goods_detail(), search_goods()
+    - 实现 parse_command(), query_orders()
+    - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7_
+
+- [x] 14. 库入口和导出 (src/lib.rs)
+  - [x] 14.1 配置条件编译
+    - 根据 features 条件导出各平台模块
+    - _Requirements: 1.5_
+  - [x] 14.2 导出公共 API
+    - 导出 ZtkClient, ZtkError, ZtkResult
+    - 导出各平台模块的公共类型
+    - _Requirements: 1.4_
+
+- [x] 15. Final Checkpoint - 确保所有测试通过
+  - Ensure all tests pass, ask the user if questions arise.
